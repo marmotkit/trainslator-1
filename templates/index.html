@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>即時翻譯</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         body {
             margin: 0;
@@ -27,8 +28,10 @@
             justify-content: center;
             gap: 8px;
         }
-        .title img {
+        .title i {
             height: 32px;
+            color: #0078d4;
+            font-size: 32px;
         }
         .input-group {
             display: flex;
@@ -120,7 +123,7 @@
 <body>
     <div class="container">
         <h1 class="title">
-            <img src="https://www.gstatic.com/images/branding/product/2x/translate_24dp.png" alt="Translator">
+            <i class="fas fa-language"></i>
             即時翻譯
         </h1>
         <div class="input-group">
@@ -189,15 +192,18 @@
         let isTargetRecording = false;
 
         recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.interimResults = true;
         targetRecognition.continuous = false;
-        targetRecognition.interimResults = false;
+        targetRecognition.interimResults = true;
 
         document.getElementById('micButton').onclick = function() {
             if (!isRecording) {
                 recognition.lang = document.getElementById('sourceLang').value;
                 recognition.start();
                 this.classList.add('recording');
+                // 清除之前的內容
+                document.getElementById('sourceText').value = '';
+                document.getElementById('targetText').value = '';
             } else {
                 recognition.stop();
                 this.classList.remove('recording');
@@ -210,6 +216,9 @@
                 targetRecognition.lang = document.getElementById('targetLang').value;
                 targetRecognition.start();
                 this.classList.add('recording');
+                // 清除之前的內容
+                document.getElementById('sourceText').value = '';
+                document.getElementById('targetText').value = '';
             } else {
                 targetRecognition.stop();
                 this.classList.remove('recording');
@@ -218,18 +227,41 @@
         };
 
         recognition.onresult = function(event) {
-            const text = event.results[0][0].transcript;
-            const sourceText = document.getElementById('sourceText');
-            sourceText.value = sourceText.value + ' ' + text;
-            translate();
+            let finalTranscript = '';
+            for (let i = 0; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    finalTranscript = event.results[i][0].transcript;
+                }
+            }
+            if (finalTranscript) {
+                document.getElementById('sourceText').value = finalTranscript;
+                translate();
+            }
+        };
+
+        recognition.onend = function() {
+            if (isRecording) {
+                recognition.start();
+            }
         };
 
         targetRecognition.onresult = function(event) {
-            const text = event.results[0][0].transcript;
-            const targetText = document.getElementById('targetText');
-            targetText.value = targetText.value + ' ' + text;
-            // 交換語言並翻譯
-            swapLanguages();
+            let finalTranscript = '';
+            for (let i = 0; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    finalTranscript = event.results[i][0].transcript;
+                }
+            }
+            if (finalTranscript) {
+                document.getElementById('targetText').value = finalTranscript;
+                swapLanguages();
+            }
+        };
+
+        targetRecognition.onend = function() {
+            if (isTargetRecording) {
+                targetRecognition.start();
+            }
         };
 
         // 翻譯功能
