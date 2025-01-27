@@ -42,38 +42,81 @@
         .mic-button.recording {
             background: #f44336;
         }
+        .language-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .swap-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: #0078d4;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <select id="sourceLang">
-            <option value="zh-TW">繁體中文</option>
-            <option value="en">英文</option>
-            <option value="ja">日文</option>
-            <option value="ko">韓文</option>
-        </select>
+        <div class="language-controls">
+            <select id="sourceLang">
+                <option value="zh-TW">繁體中文</option>
+                <option value="en">英文</option>
+                <option value="ja">日文</option>
+                <option value="ko">韓文</option>
+            </select>
+            <button class="swap-button" onclick="swapLanguages()">🔄</button>
+            <select id="targetLang">
+                <option value="en">英文</option>
+                <option value="zh-TW">繁體中文</option>
+                <option value="ja">日文</option>
+                <option value="ko">韓文</option>
+            </select>
+        </div>
         <textarea id="sourceText" rows="4" placeholder="輸入要翻譯的文字"></textarea>
         <button class="mic-button" id="micButton">🎤</button>
         
-        <select id="targetLang">
-            <option value="en">英文</option>
-            <option value="zh-TW">繁體中文</option>
-            <option value="ja">日文</option>
-            <option value="ko">韓文</option>
-        </select>
         <textarea id="targetText" rows="4" readonly></textarea>
+        <button class="mic-button" id="targetMicButton">🎤</button>
         <button onclick="translate()">翻譯</button>
     </div>
 
     <script>
         const API_URL = window.location.origin;  // 自動使用當前域名
 
+        // 語言互換功能
+        function swapLanguages() {
+            const sourceLang = document.getElementById('sourceLang');
+            const targetLang = document.getElementById('targetLang');
+            const sourceText = document.getElementById('sourceText');
+            const targetText = document.getElementById('targetText');
+            
+            // 交換語言選項
+            const tempLang = sourceLang.value;
+            sourceLang.value = targetLang.value;
+            targetLang.value = tempLang;
+            
+            // 交換文本
+            const tempText = sourceText.value;
+            sourceText.value = targetText.value;
+            targetText.value = tempText;
+            
+            // 如果有文本，執行翻譯
+            if (sourceText.value) {
+                translate();
+            }
+        }
+
         // 語音識別相關代碼
         const recognition = new webkitSpeechRecognition();
+        const targetRecognition = new webkitSpeechRecognition();
         let isRecording = false;
+        let isTargetRecording = false;
 
         recognition.continuous = false;
         recognition.interimResults = false;
+        targetRecognition.continuous = false;
+        targetRecognition.interimResults = false;
 
         document.getElementById('micButton').onclick = function() {
             if (!isRecording) {
@@ -87,10 +130,29 @@
             isRecording = !isRecording;
         };
 
+        document.getElementById('targetMicButton').onclick = function() {
+            if (!isTargetRecording) {
+                targetRecognition.lang = document.getElementById('targetLang').value;
+                targetRecognition.start();
+                this.classList.add('recording');
+            } else {
+                targetRecognition.stop();
+                this.classList.remove('recording');
+            }
+            isTargetRecording = !isTargetRecording;
+        };
+
         recognition.onresult = function(event) {
             const text = event.results[0][0].transcript;
             document.getElementById('sourceText').value = text;
             translate();
+        };
+
+        targetRecognition.onresult = function(event) {
+            const text = event.results[0][0].transcript;
+            document.getElementById('targetText').value = text;
+            // 交換語言並翻譯
+            swapLanguages();
         };
 
         // 翻譯功能
