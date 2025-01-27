@@ -9,43 +9,101 @@
             margin: 0;
             padding: 16px;
             font-family: -apple-system, system-ui;
-            background: #1e1e1e;
+            background: #000000;
             color: white;
         }
         .container {
             max-width: 600px;
             margin: 0 auto;
         }
+        .title {
+            text-align: center;
+            margin-bottom: 32px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .title img {
+            height: 32px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+            background: #1e1e1e;
+            border-radius: 16px;
+            padding: 16px;
+        }
+        textarea {
+            flex: 1;
+            min-height: 100px;
+            background: transparent;
+            border: none;
+            font-size: 18px;
+            resize: none;
+        }
+        textarea:focus {
+            outline: none;
+        }
         select, textarea, button {
-            width: 100%;
             padding: 12px;
-            margin: 8px 0;
-            border-radius: 8px;
-            border: 1px solid #3d3d3d;
-            background: #2d2d2d;
             color: white;
         }
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-top: 1px solid #3d3d3d;
+            padding-top: 12px;
+        }
+        .language-select {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        select {
+            background: transparent;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        select:focus {
+            outline: none;
+        }
         button {
-            background: #0078d4;
+            width: auto;
+            min-width: 80px;
+            background: transparent;
             border: none;
             cursor: pointer;
         }
         button:hover {
-            background: #1084d8;
+            opacity: 0.8;
         }
         .mic-button {
             width: 48px;
             height: 48px;
             border-radius: 24px;
-            background: #4CAF50;
+            background: #0078d4;
+            margin: 8px 0;
+            padding: 0;
+            font-size: 20px;
         }
         .mic-button.recording {
             background: #f44336;
         }
-        .language-controls {
+        .swap-controls {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 8px;
+            margin-bottom: 16px;
         }
         .swap-button {
             width: 48px;
@@ -53,32 +111,49 @@
             border-radius: 24px;
             background: #0078d4;
             cursor: pointer;
+            margin: 8px 0;
+            padding: 0;
+            font-size: 20px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="language-controls">
-            <select id="sourceLang">
-                <option value="zh-TW">繁體中文</option>
-                <option value="en">英文</option>
-                <option value="ja">日文</option>
-                <option value="ko">韓文</option>
-            </select>
-            <button class="swap-button" onclick="swapLanguages()">🔄</button>
-            <select id="targetLang">
-                <option value="en">英文</option>
-                <option value="zh-TW">繁體中文</option>
-                <option value="ja">日文</option>
-                <option value="ko">韓文</option>
-            </select>
+        <h1 class="title">
+            <img src="https://www.gstatic.com/images/branding/product/2x/translate_24dp.png" alt="Translator">
+            即時翻譯
+        </h1>
+        <div class="input-group">
+            <textarea id="sourceText" placeholder="輸入要翻譯的文字"></textarea>
+            <div class="controls">
+                <div class="language-select">
+                    <select id="sourceLang">
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="en">英文</option>
+                        <option value="ja">日文</option>
+                        <option value="ko">韓文</option>
+                    </select>
+                </div>
+                <button class="mic-button" id="micButton">🎤</button>
+            </div>
         </div>
-        <textarea id="sourceText" rows="4" placeholder="輸入要翻譯的文字"></textarea>
-        <button class="mic-button" id="micButton">🎤</button>
-        
-        <textarea id="targetText" rows="4" readonly></textarea>
-        <button class="mic-button" id="targetMicButton">🎤</button>
-        <button onclick="translate()">翻譯</button>
+        <div class="swap-controls">
+            <button class="swap-button" onclick="swapLanguages()">🔄</button>
+        </div>
+        <div class="input-group">
+            <textarea id="targetText" readonly></textarea>
+            <div class="controls">
+                <div class="language-select">
+                    <select id="targetLang">
+                        <option value="en">英文</option>
+                        <option value="zh-TW">繁體中文</option>
+                        <option value="ja">日文</option>
+                        <option value="ko">韓文</option>
+                    </select>
+                </div>
+                <button class="mic-button" id="targetMicButton">🎤</button>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -144,13 +219,15 @@
 
         recognition.onresult = function(event) {
             const text = event.results[0][0].transcript;
-            document.getElementById('sourceText').value = text;
+            const sourceText = document.getElementById('sourceText');
+            sourceText.value = sourceText.value + ' ' + text;
             translate();
         };
 
         targetRecognition.onresult = function(event) {
             const text = event.results[0][0].transcript;
-            document.getElementById('targetText').value = text;
+            const targetText = document.getElementById('targetText');
+            targetText.value = targetText.value + ' ' + text;
             // 交換語言並翻譯
             swapLanguages();
         };
