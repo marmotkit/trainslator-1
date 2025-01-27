@@ -19,21 +19,30 @@
 - 現代化直覺的使用者介面
 - 使用 Deepseek AI 提供精確翻譯
 
-## 安裝設定
+## Requirements
 
-1. 安裝必要的套件：
+- Python 3.8+
+- quart
+- hypercorn
+- edge-tts
+- python-dotenv
+
+## Installation
+
+1. Clone the repository:
+```bash
+git clone https://github.com/marmotkit/trainslator-1.git
+cd trainslator-1
+```
+
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. 在專案根目錄建立 `.env` 檔案並加入您的 Deepseek API 金鑰：
-```
-DEEPSEEK_API_KEY=您的API金鑰
-```
-
-3. 執行應用程式：
+3. Run the application:
 ```bash
-python realtime_translator.py
+python -m hypercorn app:app
 ```
 
 ## 使用方式

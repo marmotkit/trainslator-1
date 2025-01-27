@@ -1,1 +1,1 @@
-web: hypercorn app:app --bind 0.0.0.0:$PORT --workers 1 
+web: python -m hypercorn app:app --bind 0.0.0.0:$PORT --workers 1 
