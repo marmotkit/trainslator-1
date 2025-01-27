@@ -162,6 +162,43 @@
     <script>
         const API_URL = window.location.origin;  // 自動使用當前域名
 
+        // 翻譯隊列
+        let translationQueue = [];
+        let isTranslating = false;
+
+        // 處理翻譯隊列
+        async function processTranslationQueue() {
+            if (isTranslating || translationQueue.length === 0) return;
+            
+            isTranslating = true;
+            const text = translationQueue.shift();
+            
+            try {
+                const response = await fetch(`${API_URL}/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        source_lang: document.getElementById('sourceLang').value,
+                        target_lang: document.getElementById('targetLang').value
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('targetText').value = data.translated_text;
+                    speak(data.translated_text, document.getElementById('targetLang').value);
+                }
+            } catch (error) {
+                console.error('翻譯錯誤:', error);
+            }
+
+            isTranslating = false;
+            processTranslationQueue(); // 處理下一個翻譯請求
+        }
+
         // 語言互換功能
         function swapLanguages() {
             const sourceLang = document.getElementById('sourceLang');
@@ -191,6 +228,9 @@
         let isRecording = false;
         let isTargetRecording = false;
 
+        // 暫存的語音文本
+        let tempTranscript = '';
+
         recognition.continuous = false;
         recognition.interimResults = true;
         targetRecognition.continuous = false;
@@ -204,6 +244,8 @@
                 // 清除之前的內容
                 document.getElementById('sourceText').value = '';
                 document.getElementById('targetText').value = '';
+                tempTranscript = '';
+                translationQueue = [];
             } else {
                 recognition.stop();
                 this.classList.remove('recording');
@@ -227,15 +269,15 @@
         };
 
         recognition.onresult = function(event) {
-            let finalTranscript = '';
+            let currentTranscript = '';
             for (let i = 0; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
-                    finalTranscript = event.results[i][0].transcript;
+                    currentTranscript = event.results[i][0].transcript;
+                    tempTranscript += (tempTranscript ? ' ' : '') + currentTranscript;
+                    document.getElementById('sourceText').value = tempTranscript;
+                    translationQueue.push(tempTranscript);
+                    processTranslationQueue();
                 }
-            }
-            if (finalTranscript) {
-                document.getElementById('sourceText').value = finalTranscript;
-                translate();
             }
         };
 
@@ -263,35 +305,6 @@
                 targetRecognition.start();
             }
         };
-
-        // 翻譯功能
-        async function translate() {
-            const sourceText = document.getElementById('sourceText').value;
-            const sourceLang = document.getElementById('sourceLang').value;
-            const targetLang = document.getElementById('targetLang').value;
-
-            try {
-                const response = await fetch(`${API_URL}/translate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        text: sourceText,
-                        source_lang: sourceLang,
-                        target_lang: targetLang
-                    })
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    document.getElementById('targetText').value = data.translated_text;
-                    speak(data.translated_text, targetLang);
-                }
-            } catch (error) {
-                console.error('翻譯錯誤:', error);
-            }
-        }
 
         // 語音合成
         async function speak(text, lang) {
