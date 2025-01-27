@@ -79,6 +79,33 @@
         select:focus {
             outline: none;
         }
+        /* 修復下拉選單的顯示問題 */
+        select option {
+            background: #1e1e1e;
+            color: white;
+            padding: 12px;
+        }
+        /* 修復 Firefox 的下拉選單背景色 */
+        select:-moz-focusring {
+            color: transparent;
+            text-shadow: 0 0 0 white;
+        }
+        /* 修復 Safari 和 Chrome 的下拉選單背景色 */
+        select::-ms-expand {
+            display: none;
+        }
+        @-moz-document url-prefix() {
+            select {
+                color: white;
+                background: transparent;
+            }
+        }
+        @media screen and (-webkit-min-device-pixel-ratio:0) {
+            select {
+                color: white;
+                background: transparent;
+            }
+        }
         button {
             width: auto;
             min-width: 80px;
