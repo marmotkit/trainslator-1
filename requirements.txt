@@ -1,0 +1,9 @@
+PySide6==6.6.1
+requests==2.31.0
+SpeechRecognition==3.10.0
+pyaudio==0.2.14
+python-dotenv==1.0.0
+gTTS==2.4.0
+pygame==2.5.2
+edge-tts==6.1.9
+pydub==0.25.1
