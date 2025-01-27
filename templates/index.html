@@ -135,6 +135,8 @@
                         <option value="en">英文</option>
                         <option value="ja">日文</option>
                         <option value="ko">韓文</option>
+                        <option value="th">泰文</option>
+                        <option value="vi">越南文</option>
                     </select>
                 </div>
                 <button class="mic-button" id="micButton">🎤</button>
@@ -152,6 +154,8 @@
                         <option value="zh-TW">繁體中文</option>
                         <option value="ja">日文</option>
                         <option value="ko">韓文</option>
+                        <option value="th">泰文</option>
+                        <option value="vi">越南文</option>
                     </select>
                 </div>
                 <button class="mic-button" id="targetMicButton">🎤</button>
@@ -174,13 +178,8 @@
             const text = translationQueue.shift();
             
             try {
-                // 根據當前錄音狀態決定源語言和目標語言
-                const sourceLang = isTargetRecording ? 
-                    document.getElementById('targetLang').value : 
-                    document.getElementById('sourceLang').value;
-                const targetLang = isTargetRecording ? 
-                    document.getElementById('sourceLang').value : 
-                    document.getElementById('targetLang').value;
+                const sourceLang = document.getElementById('sourceLang').value;
+                const targetLang = document.getElementById('targetLang').value;
                 
                 const response = await fetch(`${API_URL}/translate`, {
                     method: 'POST',
@@ -196,12 +195,16 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    if (isTargetRecording) {
-                        document.getElementById('sourceText').value = data.translated_text;
-                    } else {
-                        document.getElementById('targetText').value = data.translated_text;
-                    }
+                    document.getElementById('targetText').value = data.translated_text;
                     await speak(data.translated_text, targetLang);
+                    
+                    if (isTargetRecording) {
+                        const sourceLang = document.getElementById('sourceLang');
+                        const targetLang = document.getElementById('targetLang');
+                        const tempLang = sourceLang.value;
+                        sourceLang.value = targetLang.value;
+                        targetLang.value = tempLang;
+                    }
                 }
             } catch (error) {
                 console.error('翻譯錯誤:', error);
@@ -299,6 +302,12 @@
                     targetRecognition.stop();
                     document.getElementById('targetMicButton').classList.remove('recording');
                     isTargetRecording = false;
+                    // 交換語言後再翻譯
+                    const sourceLang = document.getElementById('sourceLang');
+                    const targetLang = document.getElementById('targetLang');
+                    const tempLang = sourceLang.value;
+                    sourceLang.value = targetLang.value;
+                    targetLang.value = tempLang;
                     processTranslationQueue();
                 }
             }
