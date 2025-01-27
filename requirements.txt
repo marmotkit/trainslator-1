@@ -1,8 +1,9 @@
-quart
-quart-cors
-gunicorn
+quart==0.18.4
+quart-cors==0.7.0
+hypercorn==0.14.3
+h11==0.14.0
+wsproto==1.2.0
 edge-tts==6.1.9
 googletrans==3.1.0a0
 python-dotenv==1.0.0
 requests==2.31.0
-hypercorn
