@@ -1,1 +1,1 @@
-web: python -m gunicorn app:app --chdir /opt/render/project/src 
+web: hypercorn app:app --bind 0.0.0.0:$PORT 

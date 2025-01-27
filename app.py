@@ -1,14 +1,14 @@
-from flask import Flask, request, jsonify, send_from_directory, render_template
-from flask_cors import CORS
+from quart import Quart, request, jsonify, send_from_directory, render_template
+from quart_cors import cors
 from googletrans import Translator
 import edge_tts
 import asyncio
 import os
-import time
 from datetime import datetime
 
-app = Flask(__name__, template_folder='templates')
-CORS(app)
+# 使用 Quart 替代 Flask 以支援異步
+app = Quart(__name__, template_folder='templates')
+app = cors(app)
 
 # 初始化翻譯器
 translator = Translator()
@@ -25,10 +25,14 @@ VOICE_OPTIONS = {
     "vi": "vi-VN-HoaiMyNeural"
 }
 
+@app.route('/')
+async def index():
+    return await render_template('index.html')
+
 @app.route('/translate', methods=['POST'])
-def translate():
+async def translate():
     try:
-        data = request.json
+        data = await request.get_json()
         text = data.get('text')
         source_lang = data.get('source_lang', 'auto')
         target_lang = data.get('target_lang', 'en')
@@ -51,7 +55,7 @@ def translate():
 @app.route('/speak', methods=['POST'])
 async def speak():
     try:
-        data = request.json
+        data = await request.get_json()
         text = data.get('text')
         lang = data.get('lang', 'en')
         
@@ -81,13 +85,8 @@ async def speak():
         }), 500
 
 @app.route('/audio/<filename>')
-def serve_audio(filename):
-    return send_from_directory('temp', filename)
-
-# 添加根路由
-@app.route('/')
-def index():
-    return render_template('index.html')
+async def serve_audio(filename):
+    return await send_from_directory('temp', filename)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
