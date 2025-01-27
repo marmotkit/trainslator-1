@@ -185,6 +185,14 @@
             const text = translationQueue.shift();
             
             try {
+                // 根據當前錄音狀態決定源語言和目標語言
+                const sourceLang = isTargetRecording ? 
+                    document.getElementById('targetLang').value : 
+                    document.getElementById('sourceLang').value;
+                const targetLang = isTargetRecording ? 
+                    document.getElementById('sourceLang').value : 
+                    document.getElementById('targetLang').value;
+                
                 const response = await fetch(`${API_URL}/translate`, {
                     method: 'POST',
                     headers: {
@@ -192,17 +200,22 @@
                     },
                     body: JSON.stringify({
                         text: text,
-                        source_lang: document.getElementById('sourceLang').value,
-                        target_lang: document.getElementById('targetLang').value
+                        source_lang: sourceLang,
+                        target_lang: targetLang
                     })
                 });
 
                 const data = await response.json();
                 if (data.success) {
-                    document.getElementById('targetText').value = data.translated_text;
-                    await speak(data.translated_text, document.getElementById('targetLang').value);
+                    if (isTargetRecording) {
+                        document.getElementById('sourceText').value = data.translated_text;
+                    } else {
+                        document.getElementById('targetText').value = data.translated_text;
+                    }
+                    await speak(data.translated_text, targetLang);
                     // 語音播放完成後，如果仍在錄音狀態則重新開始錄音
-                    if (isRecording) {
+                    if (isRecording || isTargetRecording) {
+                        const recognition = isTargetRecording ? targetRecognition : recognition;
                         recognition.start();
                         lastSpeechTime = Date.now();
                     }
@@ -280,9 +293,14 @@
                 // 清除之前的內容
                 document.getElementById('sourceText').value = '';
                 document.getElementById('targetText').value = '';
+                tempTranscript = '';
+                translationQueue = [];
+                lastSpeechTime = Date.now();
+                silenceTimer = setInterval(checkSilence, 300);
             } else {
                 targetRecognition.stop();
                 this.classList.remove('recording');
+                clearInterval(silenceTimer);
             }
             isTargetRecording = !isTargetRecording;
         };
@@ -305,25 +323,14 @@
         };
 
         targetRecognition.onresult = function(event) {
-            let finalTranscript = '';
+            let currentTranscript = '';
             for (let i = 0; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
-                    finalTranscript = event.results[i][0].transcript;
-                    document.getElementById('targetText').value = finalTranscript;
-                    // 交換語言並翻譯
-                    const sourceLang = document.getElementById('sourceLang');
-                    const targetLang = document.getElementById('targetLang');
-                    const sourceText = document.getElementById('sourceText');
-                    
-                    // 交換語言選項
-                    const tempLang = sourceLang.value;
-                    sourceLang.value = targetLang.value;
-                    targetLang.value = tempLang;
-                    
-                    // 設置源文本並觸發翻譯
-                    sourceText.value = finalTranscript;
-                    translationQueue = [finalTranscript];
-                    processTranslationQueue();
+                    currentTranscript = event.results[i][0].transcript;
+                    tempTranscript += (tempTranscript ? ' ' : '') + currentTranscript;
+                    document.getElementById('targetText').value = tempTranscript;
+                    translationQueue = [currentTranscript]; // 只翻譯最新的部分
+                    lastSpeechTime = Date.now();
                 }
             }
         };
