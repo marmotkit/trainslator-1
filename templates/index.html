@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>即時翻譯</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 16px;
+            font-family: -apple-system, system-ui;
+            background: #1e1e1e;
+            color: white;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        select, textarea, button {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border: 1px solid #3d3d3d;
+            background: #2d2d2d;
+            color: white;
+        }
+        button {
+            background: #0078d4;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #1084d8;
+        }
+        .mic-button {
+            width: 48px;
+            height: 48px;
+            border-radius: 24px;
+            background: #4CAF50;
+        }
+        .mic-button.recording {
+            background: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <select id="sourceLang">
+            <option value="zh-TW">繁體中文</option>
+            <option value="en">英文</option>
+            <option value="ja">日文</option>
+            <option value="ko">韓文</option>
+        </select>
+        <textarea id="sourceText" rows="4" placeholder="輸入要翻譯的文字"></textarea>
+        <button class="mic-button" id="micButton">🎤</button>
+        
+        <select id="targetLang">
+            <option value="en">英文</option>
+            <option value="zh-TW">繁體中文</option>
+            <option value="ja">日文</option>
+            <option value="ko">韓文</option>
+        </select>
+        <textarea id="targetText" rows="4" readonly></textarea>
+        <button onclick="translate()">翻譯</button>
+    </div>
+
+    <script>
+        const API_URL = window.location.origin;  // 自動使用當前域名
+
+        // 語音識別相關代碼
+        const recognition = new webkitSpeechRecognition();
+        let isRecording = false;
+
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        document.getElementById('micButton').onclick = function() {
+            if (!isRecording) {
+                recognition.lang = document.getElementById('sourceLang').value;
+                recognition.start();
+                this.classList.add('recording');
+            } else {
+                recognition.stop();
+                this.classList.remove('recording');
+            }
+            isRecording = !isRecording;
+        };
+
+        recognition.onresult = function(event) {
+            const text = event.results[0][0].transcript;
+            document.getElementById('sourceText').value = text;
+            translate();
+        };
+
+        // 翻譯功能
+        async function translate() {
+            const sourceText = document.getElementById('sourceText').value;
+            const sourceLang = document.getElementById('sourceLang').value;
+            const targetLang = document.getElementById('targetLang').value;
+
+            try {
+                const response = await fetch(`${API_URL}/translate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: sourceText,
+                        source_lang: sourceLang,
+                        target_lang: targetLang
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('targetText').value = data.translated_text;
+                    speak(data.translated_text, targetLang);
+                }
+            } catch (error) {
+                console.error('翻譯錯誤:', error);
+            }
+        }
+
+        // 語音合成
+        async function speak(text, lang) {
+            try {
+                const response = await fetch(`${API_URL}/speak`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: text,
+                        lang: lang
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    const audio = new Audio(`${API_URL}${data.audio_url}`);
+                    audio.play();
+                }
+            } catch (error) {
+                console.error('語音合成錯誤:', error);
+            }
+        }
+    </script>
+</body>
+</html> 
