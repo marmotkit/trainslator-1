@@ -160,11 +160,22 @@
     </div>
 
     <script>
-        const API_URL = window.location.origin;  // 自動使用當前域名
+        const API_URL = window.location.origin;
 
         // 翻譯隊列
         let translationQueue = [];
         let isTranslating = false;
+        let silenceTimer = null;
+        let lastSpeechTime = null;
+        const SILENCE_THRESHOLD = 1500; // 1.5秒無語音視為停頓
+
+        // 檢查語音停頓
+        function checkSilence() {
+            if (lastSpeechTime && Date.now() - lastSpeechTime > SILENCE_THRESHOLD) {
+                recognition.stop();
+                processTranslationQueue();
+            }
+        }
 
         // 處理翻譯隊列
         async function processTranslationQueue() {
@@ -189,14 +200,18 @@
                 const data = await response.json();
                 if (data.success) {
                     document.getElementById('targetText').value = data.translated_text;
-                    speak(data.translated_text, document.getElementById('targetLang').value);
+                    await speak(data.translated_text, document.getElementById('targetLang').value);
+                    // 語音播放完成後，如果仍在錄音狀態則重新開始錄音
+                    if (isRecording) {
+                        recognition.start();
+                        lastSpeechTime = Date.now();
+                    }
                 }
             } catch (error) {
                 console.error('翻譯錯誤:', error);
             }
 
             isTranslating = false;
-            processTranslationQueue(); // 處理下一個翻譯請求
         }
 
         // 語言互換功能
@@ -230,6 +245,7 @@
 
         // 暫存的語音文本
         let tempTranscript = '';
+        let lastTranslatedText = '';
 
         recognition.continuous = false;
         recognition.interimResults = true;
@@ -246,9 +262,12 @@
                 document.getElementById('targetText').value = '';
                 tempTranscript = '';
                 translationQueue = [];
+                lastSpeechTime = Date.now();
+                silenceTimer = setInterval(checkSilence, 300);
             } else {
                 recognition.stop();
                 this.classList.remove('recording');
+                clearInterval(silenceTimer);
             }
             isRecording = !isRecording;
         };
@@ -275,16 +294,14 @@
                     currentTranscript = event.results[i][0].transcript;
                     tempTranscript += (tempTranscript ? ' ' : '') + currentTranscript;
                     document.getElementById('sourceText').value = tempTranscript;
-                    translationQueue.push(tempTranscript);
-                    processTranslationQueue();
+                    translationQueue = [currentTranscript]; // 只翻譯最新的部分
+                    lastSpeechTime = Date.now();
                 }
             }
         };
 
         recognition.onend = function() {
-            if (isRecording) {
-                recognition.start();
-            }
+            // 不要自動重新開始，等待翻譯和語音完成後再重新開始
         };
 
         targetRecognition.onresult = function(event) {
@@ -292,11 +309,22 @@
             for (let i = 0; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
                     finalTranscript = event.results[i][0].transcript;
+                    document.getElementById('targetText').value = finalTranscript;
+                    // 交換語言並翻譯
+                    const sourceLang = document.getElementById('sourceLang');
+                    const targetLang = document.getElementById('targetLang');
+                    const sourceText = document.getElementById('sourceText');
+                    
+                    // 交換語言選項
+                    const tempLang = sourceLang.value;
+                    sourceLang.value = targetLang.value;
+                    targetLang.value = tempLang;
+                    
+                    // 設置源文本並觸發翻譯
+                    sourceText.value = finalTranscript;
+                    translationQueue = [finalTranscript];
+                    processTranslationQueue();
                 }
-            }
-            if (finalTranscript) {
-                document.getElementById('targetText').value = finalTranscript;
-                swapLanguages();
             }
         };
 
@@ -323,7 +351,10 @@
                 const data = await response.json();
                 if (data.success) {
                     const audio = new Audio(`${API_URL}${data.audio_url}`);
-                    audio.play();
+                    return new Promise((resolve) => {
+                        audio.onended = resolve;
+                        audio.play();
+                    });
                 }
             } catch (error) {
                 console.error('語音合成錯誤:', error);
