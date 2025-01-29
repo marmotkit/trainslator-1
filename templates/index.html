@@ -235,9 +235,15 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    // 原文始終顯示在源語言框，翻譯始終顯示在目標語言框
-                    document.getElementById('sourceText').value = text;
-                    document.getElementById('targetText').value = data.translated_text;
+                    if (isTargetRecording) {
+                        // 上方麥克風：原文在上，翻譯在下
+                        document.getElementById('targetText').value = text;
+                        document.getElementById('sourceText').value = data.translated_text;
+                    } else {
+                        // 下方麥克風：原文在下，翻譯在上
+                        document.getElementById('sourceText').value = text;
+                        document.getElementById('targetText').value = data.translated_text;
+                    }
                     await speak(data.translated_text, targetLang);
                 }
             } catch (error) {
@@ -343,7 +349,7 @@
                     targetLang.value = tempSourceLang;
                     
                     // 設置文本並觸發翻譯
-                    document.getElementById('sourceText').value = text;
+                    document.getElementById('targetText').value = text;
                     translationQueue = [text];
                     targetRecognition.stop();
                     document.getElementById('targetMicButton').classList.remove('recording');
