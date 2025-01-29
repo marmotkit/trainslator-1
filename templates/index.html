@@ -149,13 +149,13 @@
         .top-group {
             transform: rotate(180deg);
         }
-        .top-group * {
-            transform: rotate(180deg);
-        }
         /* 上方文字也需要旋轉 */
         .top-group textarea {
-            transform: rotate(180deg);
             direction: rtl;  /* 確保文字方向正確 */
+        }
+        /* 控制項需要旋轉回來 */
+        .top-group .controls {
+            transform: rotate(180deg);
         }
     </style>
 </head>
@@ -217,13 +217,18 @@
             const text = translationQueue.shift();
             
             try {
-                // 根據當前使用的麥克風決定翻譯方向
-                const sourceLang = isTargetRecording ? 
-                    document.getElementById('targetLang').value : 
-                    document.getElementById('sourceLang').value;
-                const targetLang = isTargetRecording ? 
-                    document.getElementById('sourceLang').value : 
-                    document.getElementById('targetLang').value;
+                let sourceLang, targetLang;
+                if (isTargetRecording) {
+                    // 如果是上方麥克風
+                    sourceLang = document.getElementById('targetLang').value;
+                    targetLang = document.getElementById('sourceLang').value;
+                    document.getElementById('sourceText').value = text;
+                } else {
+                    // 如果是下方麥克風
+                    sourceLang = document.getElementById('sourceLang').value;
+                    targetLang = document.getElementById('targetLang').value;
+                    document.getElementById('sourceText').value = text;
+                }
                 
                 const response = await fetch(`${API_URL}/translate`, {
                     method: 'POST',
@@ -239,11 +244,7 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    if (isTargetRecording) {
-                        document.getElementById('sourceText').value = data.translated_text;
-                    } else {
-                        document.getElementById('targetText').value = data.translated_text;
-                    }
+                    document.getElementById('targetText').value = data.translated_text;
                     await speak(data.translated_text, targetLang);
                 }
             } catch (error) {
@@ -343,9 +344,6 @@
                     targetRecognition.stop();
                     document.getElementById('targetMicButton').classList.remove('recording');
                     isTargetRecording = false;
-                    // 交換語言後再翻譯
-                    const sourceLang = document.getElementById('targetLang').value;
-                    const targetLang = document.getElementById('sourceLang').value;
                     processTranslationQueue();
                 }
             }
