@@ -217,16 +217,9 @@
             const text = translationQueue.shift();
             
             try {
-                let sourceLang, targetLang;
-                if (isTargetRecording) {
-                    // 如果是上方麥克風
-                    sourceLang = document.getElementById('targetLang').value;
-                    targetLang = document.getElementById('sourceLang').value;
-                } else {
-                    // 如果是下方麥克風
-                    sourceLang = document.getElementById('sourceLang').value;
-                    targetLang = document.getElementById('targetLang').value;
-                }
+                // 始終使用當前顯示的語言設定
+                const sourceLang = document.getElementById('sourceLang').value;
+                const targetLang = document.getElementById('targetLang').value;
                 
                 const response = await fetch(`${API_URL}/translate`, {
                     method: 'POST',
@@ -242,15 +235,9 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    if (isTargetRecording) {
-                        // 上方麥克風：原文在上，翻譯在下
-                        document.getElementById('targetText').value = text;
-                        document.getElementById('sourceText').value = data.translated_text;
-                    } else {
-                        // 下方麥克風：原文在下，翻譯在上
-                        document.getElementById('sourceText').value = text;
-                        document.getElementById('targetText').value = data.translated_text;
-                    }
+                    // 原文始終顯示在源語言框，翻譯始終顯示在目標語言框
+                    document.getElementById('sourceText').value = text;
+                    document.getElementById('targetText').value = data.translated_text;
                     await speak(data.translated_text, targetLang);
                 }
             } catch (error) {
@@ -344,7 +331,15 @@
             for (let i = 0; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
                     const text = event.results[i][0].transcript;
-                    document.getElementById('targetText').value = text;
+                    // 當使用上方麥克風時，先交換語言
+                    if (isTargetRecording) {
+                        const sourceLang = document.getElementById('sourceLang');
+                        const targetLang = document.getElementById('targetLang');
+                        const tempLang = sourceLang.value;
+                        sourceLang.value = targetLang.value;
+                        targetLang.value = tempLang;
+                    }
+                    document.getElementById('sourceText').value = text;
                     translationQueue = [text];
                     targetRecognition.stop();
                     document.getElementById('targetMicButton').classList.remove('recording');
