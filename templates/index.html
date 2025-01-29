@@ -331,8 +331,8 @@
             for (let i = 0; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
                     const text = event.results[i][0].transcript;
-                    // 上方麥克風的輸入直接放在目標文本框
-                    document.getElementById('targetText').value = text;
+                    // 與下方麥克風相同的邏輯
+                    document.getElementById('sourceText').value = text;
                     translationQueue = [text];
                     targetRecognition.stop();
                     document.getElementById('targetMicButton').classList.remove('recording');
