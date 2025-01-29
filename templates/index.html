@@ -331,13 +331,28 @@
             for (let i = 0; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
                     const text = event.results[i][0].transcript;
-                    // 與下方麥克風相同的邏輯
+                    // 上方麥克風時，交換源語言和目標語言的順序
+                    const sourceLang = document.getElementById('sourceLang');
+                    const targetLang = document.getElementById('targetLang');
+                    // 暫存當前語言設定
+                    const tempSourceLang = sourceLang.value;
+                    const tempTargetLang = targetLang.value;
+                    
+                    // 交換語言設定
+                    sourceLang.value = tempTargetLang;
+                    targetLang.value = tempSourceLang;
+                    
+                    // 設置文本並觸發翻譯
                     document.getElementById('sourceText').value = text;
                     translationQueue = [text];
                     targetRecognition.stop();
                     document.getElementById('targetMicButton').classList.remove('recording');
                     isTargetRecording = false;
-                    processTranslationQueue();
+                    // 翻譯完成後恢復語言設定
+                    processTranslationQueue().then(() => {
+                        sourceLang.value = tempSourceLang;
+                        targetLang.value = tempTargetLang;
+                    });
                 }
             }
         };
