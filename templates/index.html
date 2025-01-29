@@ -243,9 +243,11 @@
                 const data = await response.json();
                 if (data.success) {
                     if (isTargetRecording) {
+                        // 上方麥克風：原文在上，翻譯在下
                         document.getElementById('targetText').value = text;
                         document.getElementById('sourceText').value = data.translated_text;
                     } else {
+                        // 下方麥克風：原文在下，翻譯在上
                         document.getElementById('sourceText').value = text;
                         document.getElementById('targetText').value = data.translated_text;
                     }
@@ -342,7 +344,7 @@
             for (let i = 0; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
                     const text = event.results[i][0].transcript;
-                    document.getElementById('sourceText').value = text;
+                    document.getElementById('targetText').value = text;
                     translationQueue = [text];
                     targetRecognition.stop();
                     document.getElementById('targetMicButton').classList.remove('recording');
