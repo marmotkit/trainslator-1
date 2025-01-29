@@ -152,6 +152,11 @@
         .top-group * {
             transform: rotate(180deg);
         }
+        /* 上方文字也需要旋轉 */
+        .top-group textarea {
+            transform: rotate(180deg);
+            direction: rtl;  /* 確保文字方向正確 */
+        }
     </style>
 </head>
 <body>
@@ -234,7 +239,11 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    document.getElementById('targetText').value = data.translated_text;
+                    if (isTargetRecording) {
+                        document.getElementById('sourceText').value = data.translated_text;
+                    } else {
+                        document.getElementById('targetText').value = data.translated_text;
+                    }
                     await speak(data.translated_text, targetLang);
                 }
             } catch (error) {
@@ -328,12 +337,15 @@
             for (let i = 0; i < event.results.length; i++) {
                 if (event.results[i].isFinal) {
                     const text = event.results[i][0].transcript;
-                    // 將語音輸入放到源文本框，並觸發翻譯
-                    document.getElementById('sourceText').value = text;
+                    // 將語音輸入放到目標文本框
+                    document.getElementById('targetText').value = text;
                     translationQueue = [text];
                     targetRecognition.stop();
                     document.getElementById('targetMicButton').classList.remove('recording');
                     isTargetRecording = false;
+                    // 交換語言後再翻譯
+                    const sourceLang = document.getElementById('targetLang').value;
+                    const targetLang = document.getElementById('sourceLang').value;
                     processTranslationQueue();
                 }
             }
